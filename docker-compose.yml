@@ -1,0 +1,49 @@
+services:
+  app:
+    image: kooldev/node:20
+    command: ["npm", "run", "prod"]
+    ports:
+      - "${BACKEND_PORT:-3000}:${BACKEND_PORT:-3000}"
+    environment:
+      ASUSER: "${KOOL_ASUSER:-0}"
+      UID: "${UID:-0}"
+      BACKEND_PORT: "${BACKEND_PORT:-3000}"
+    volumes:
+      - .:/app:delegated
+    networks:
+      - kool_local
+      - kool_global
+  database:
+    image: mysql/mysql-server:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "${DATABASE_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD-rootpass}"
+      MYSQL_DATABASE: "${DB_DATABASE-database}"
+      MYSQL_USER: "${DB_USERNAME-user}"
+      MYSQL_PASSWORD: "${DB_PASSWORD-pass}"
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    volumes:
+      - database:/var/lib/mysql:delegated
+    networks:
+      - kool_local
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping"]
+  cache:
+    image: redis:7-alpine
+    volumes:
+      - cache:/data:delegated
+    networks:
+      - kool_local
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+networks:
+  kool_local:
+  kool_global:
+    external: true
+    name: "${GLOBAL_NETWORK:-kool_global}"
+volumes:
+  database:
+  cache:
